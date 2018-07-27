@@ -22,3 +22,24 @@ exports.getStores = async (req, res) => {
   const stores = await Store.find();
   res.render('stores', { title: 'Stores', stores});
 };
+
+exports.editStore = async (req, res) => {
+  const store = await Store.findOne({ _id: req.params.id});
+  // TODO
+  //confirm they are the owner of the store
+  res.render('editStore', { title: `Edit ${store.name}`, store});
+};
+
+exports.updateStore = async (req, res) => {
+  // setting the location data to be a point on update
+  req.body.location.type = 'Point';
+  const store = await Store.findOneAndUpdate({ _id: req.params.id},
+    req.body,
+    {
+      new: true, // this returns the new updated stores
+      runValidators: true // you need to ask it to run the validators, because this doesn't happen by default on update
+    }).exec();
+
+  req.flash('success', `Successfuly Updated ${store.name}. <a href="/stores/${store.slug}">View Store</a>`);
+  res.redirect(`/stores/${store._id}/edit`);
+};
