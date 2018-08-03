@@ -19,7 +19,14 @@ const userSchema = new Schema({
     type: String,
     trim: true,
     required: 'Please enter a name.'
-  }
+  },
+  resetPasswordToken: String,
+  resetPasswordExpires: Date
+});
+
+userSchema.virtual('gravatar').get(function() {
+    const hash = md5(this.email);
+    return `https://gravatar.com/avatar/${hash}?s=200`;
 });
 
 userSchema.plugin(passportLocalMongoose, { usernameField: 'email'});
