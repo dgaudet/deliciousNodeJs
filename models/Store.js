@@ -77,12 +77,58 @@ storeSchema.statics.getTagsList = function() {
     { $group: { _id: '$tags', count: { $sum: 1 }}},
     { $sort: { count: -1 }}
   ]);
-}
+};
 
+storeSchema.statics.getTopStores = function() {
+  return this.aggregate([
+    // the reviews in the statement below comes from the Review object,
+    // mongodb will lowercase the model name and add an 's' to the end to make it plural
+    { $lookup:
+      {
+        from: 'reviews',
+        localField: '_id',
+        foreignField: 'store',
+        as: 'reviews'
+      }
+    },
+    { // this section filters out any reivews that have more than one review
+      $match: {
+        'reviews.1': { $exists: true}
+      }
+    },
+    { // add the average reviews field, and keep the fields we want
+      $project: {
+        photo: '$$ROOT.photo',
+        name: '$$ROOT.name',
+        reviews: '$$ROOT.reviews',
+        slug: '$$ROOT.slug',
+        averageRating: {
+          $avg: '$reviews.rating'
+        }
+      }
+    },
+    { // sort by the new averageRating field
+      $sort: { averageRating: -1 }
+    },
+    { // limit results to 10
+      $limit: 10
+    }
+  ]);
+};
+
+// this virutal schema addition is mongoose specific
 storeSchema.virtual('reviews', {
   ref: 'Review',
   localField: '_id', // this is the field on this model
   foreignField: 'store' // this is the field on the Review model
-})
+});
+
+function autopopulate(next) {
+  this.populate('reviews');
+  next();
+};
+
+storeSchema.pre('find', autopopulate);
+storeSchema.pre('findOne', autopopulate);
 
 module.exports = mongoose.model('Store', storeSchema);
