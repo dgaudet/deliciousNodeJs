@@ -1,1 +1,8 @@
 node_modules
+*.log
+.idea
+haters/
+variables.env
+
+public/uploads/*
+public/dist/*
